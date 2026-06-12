@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vocab Tool">
+<meta name="application-name" content="Vocab Tool">
+<meta name="theme-color" content="#1D9E75">
+<meta name="description" content="Flashcard và bài tập giao tiếp tiếng Anh">
+<link id="pwa-icon" rel="apple-touch-icon" href="">
+<title>Daily English Vocab Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;}
+.sheet-nav{display:flex;background:#fff;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:100;}
+.sheet-tab{flex:1;padding:14px 8px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;color:#94a3b8;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.sheet-tab.active{color:#1D9E75;border-bottom-color:#1D9E75;}
+.sheet-tab:hover:not(.active){color:#475569;background:#f8fafc;}
+.sheet{display:none;padding:14px;max-width:640px;margin:0 auto;}
+.sheet.active{display:block;}
+.tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+.tab{padding:5px 12px;border-radius:20px;border:1.5px solid #cbd5e1;background:#fff;font-size:11px;cursor:pointer;font-weight:600;}
+.tab.on{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
+.prog-wrap{height:5px;background:#e2e8f0;border-radius:3px;margin-bottom:8px;}
+.prog-bar{height:100%;border-radius:3px;transition:width .3s;}
+.pg-green{background:#1D9E75;}.pg-purple{background:#7C3AED;}.pg-teal{background:#0891b2;}.pg-orange{background:#ea580c;}
+.fc-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#64748b;margin-bottom:6px;}
+.bdg{padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.card-area{perspective:1200px;height:280px;cursor:pointer;margin-bottom:14px;}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:.5s cubic-bezier(.4,0,.2,1);}
+.card-inner.flipped{transform:rotateY(180deg);}
+.card-face{position:absolute;inset:0;border-radius:20px;border:1.5px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.card-back{transform:rotateY(180deg);background:linear-gradient(135deg,#f0fdf4,#ecfdf5);}
+.fc-hint{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.fc-word{font-size:22px;font-weight:700;text-align:center;margin-bottom:3px;color:#1e293b;line-height:1.3;}
+.fc-pos{font-size:12px;color:#1D9E75;margin-bottom:2px;font-weight:600;}
+.fc-ipa{font-size:12px;color:#94a3b8;margin-bottom:6px;}
+.fc-audio-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:6px;}
+.fc-audio-btn:hover{background:#dbeafe;}
+.fc-audio-btn.playing{background:#0ea5e9;color:#fff;}
+/* IMAGE HINT */
+.fc-img-hint-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 13px;border-radius:20px;border:1.5px dashed #fbbf24;background:#fffbeb;color:#92400e;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.fc-img-hint-btn:hover{background:#fef3c7;}
+.fc-img-panel{margin-top:8px;border-radius:14px;overflow:hidden;border:1.5px solid #e2e8f0;background:#fafafa;display:flex;align-items:center;justify-content:center;padding:8px;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.fc-img-panel svg{display:block;}
+.fc-viet{font-size:20px;font-weight:700;text-align:center;color:#065f46;line-height:1.4;margin-bottom:4px;}
+.fc-eng-back{font-size:12px;color:#94a3b8;text-align:center;}
+.round-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#fef3c7;border:1.5px solid #fde68a;color:#92400e;font-size:11px;font-weight:700;margin-bottom:10px;}
+.round-badge.forget-mode{background:#fce7f3;border-color:#fbcfe8;color:#9d174d;}
+.fc-btns{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+.btn{padding:9px 18px;border-radius:12px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s;}
+.btn:hover{background:#f8fafc;}
+.btn-remember{border-color:#6ee7b7;color:#065f46;background:#f0fdf4;}
+.btn-remember:hover{background:#dcfce7;}
+.btn-forget{border-color:#fca5a5;color:#b91c1c;background:#fff5f5;}
+.btn-forget:hover{background:#fee2e2;}
+.fc-stats{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;}
+.chip{font-size:11px;padding:4px 11px;border-radius:20px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;}
+.chip.green{background:#dcfce7;border-color:#86efac;color:#166534;}
+.chip.red{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+.chip.blue{background:#dbeafe;border-color:#93c5fd;color:#1e40af;}
+.shuf-btn{display:block;margin:0 auto;background:none;border:none;font-size:12px;color:#94a3b8;cursor:pointer;}
+.forget-panel{background:#fff;border:1.5px solid #fbcfe8;border-radius:16px;padding:16px;margin-top:10px;text-align:center;}
+.forget-panel h3{font-size:15px;font-weight:700;color:#9d174d;margin-bottom:8px;}
+.forget-panel p{font-size:12px;color:#64748b;margin-bottom:14px;}
+.forget-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;}
+.forget-tag{padding:4px 12px;border-radius:20px;background:#fce7f3;border:1px solid #fbcfe8;color:#9d174d;font-size:12px;font-weight:600;}
+.btn-review{padding:10px 24px;border-radius:12px;border:none;background:#be185d;color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+.done-panel{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid #86efac;border-radius:16px;padding:24px;text-align:center;}
+.done-panel h3{font-size:18px;font-weight:700;color:#166534;margin-bottom:6px;}
+/* QUIZ */
+.setup-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:20px;}
+.setup-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.setup-sub{font-size:12px;color:#64748b;margin-bottom:14px;}
+.count-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+.cnt-btn{padding:8px 16px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+.cnt-btn.on{background:#ede9fe;border-color:#a78bfa;color:#4c1d95;}
+.start-btn{width:100%;padding:13px;border-radius:12px;border:none;background:#1D9E75;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
+.quiz-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.qstat{font-size:13px;font-weight:700;color:#334155;}
+.qchips{display:flex;gap:6px;}
+.qchip{font-size:11px;padding:3px 10px;border-radius:20px;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:600;}
+.grid-toggle{background:none;border:none;font-size:12px;color:#94a3b8;cursor:pointer;margin-bottom:8px;display:block;font-weight:600;}
+.q-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:5px;margin-bottom:10px;}
+.qdot{width:36px;height:36px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.qdot.d-ok{background:#dcfce7;border-color:#86efac;color:#166534;}
+.qdot.d-no{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+.qdot.d-cur{background:#ede9fe;border-color:#a78bfa;color:#4c1d95;}
+.q-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:14px 16px;margin-bottom:10px;}
+.q-part-tag{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:8px;}
+.tag-a{background:#ede9fe;color:#4c1d95;}.tag-b{background:#d1fae5;color:#065f46;}.tag-c{background:#ffedd5;color:#9a3412;}
+.passage{background:#f8fafc;border-left:4px solid #93c5fd;border-radius:0 10px 10px 0;padding:10px 13px;margin-bottom:12px;font-size:13px;line-height:1.7;}
+.q-text{font-size:14px;font-weight:600;line-height:1.65;margin-bottom:12px;}
+.blank{display:inline-block;min-width:80px;border-bottom:2.5px solid #7C3AED;text-align:center;color:#7C3AED;font-weight:700;}
+.q-audio-bar{display:flex;align-items:center;gap:6px;background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:7px 11px;margin-bottom:10px;flex-wrap:wrap;}
+.q-audio-lbl{font-size:11px;font-weight:700;color:#0369a1;}
+.tts-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;border:1.5px solid #7dd3fc;background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:600;cursor:pointer;}
+.tts-btn:hover{background:#bae6fd;}
+.tts-btn.active{background:#0ea5e9;color:#fff;border-color:#0284c7;}
+.tts-all-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;border:1.5px solid #a78bfa;background:#ede9fe;color:#4c1d95;font-size:11px;font-weight:700;cursor:pointer;margin-left:auto;}
+.tts-all-btn:hover{background:#ddd6fe;}
+.tts-all-btn.active{background:#7C3AED;color:#fff;}
+.tts-speed-sel{padding:3px 7px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:11px;cursor:pointer;}
+.q-opts{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.qopt{padding:10px 12px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13px;cursor:pointer;text-align:left;line-height:1.45;font-weight:500;}
+.qopt:hover:not(:disabled){background:#f8fafc;}
+.qopt.ok{background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600;}
+.qopt.no{background:#fee2e2;border-color:#fca5a5;color:#991b1b;}
+.qopt.reveal{background:#dcfce7;border-color:#86efac;color:#166534;font-weight:600;}
+.qopt:disabled{cursor:default;}
+.fb{display:none;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:10px;line-height:1.5;}
+.fb.show{display:block;}
+.fb.ok{background:#dcfce7;color:#166534;}
+.fb.no{background:#fee2e2;color:#991b1b;}
+.q-nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.nav-left{display:flex;gap:7px;}
+.btn-nxt{background:#ede9fe;border-color:#a78bfa;color:#4c1d95;}
+.btn-sub{border-color:#f97316;color:#c2410c;}
+.jump-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;font-weight:600;}
+.jump-wrap select{padding:6px 9px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;cursor:pointer;}
+.result-box{text-align:center;padding:28px 14px;}
+.res-score{font-size:52px;font-weight:800;color:#1D9E75;}
+.res-pct{font-size:15px;color:#64748b;margin-top:4px;}
+.res-msg{font-size:13px;color:#475569;margin-top:8px;}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
+.res-card{background:#f8fafc;border-radius:12px;padding:12px 8px;text-align:center;border:1px solid #e2e8f0;}
+.res-lbl{font-size:10px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;font-weight:700;}
+.res-val{font-size:22px;font-weight:800;}
+@keyframes pulse{from{opacity:1;}to{opacity:.7;}}
+.tts-btn.active,.tts-all-btn.active{animation:pulse .8s infinite alternate;}
+
+/* ===== PWA INSTALL BANNER ===== */
+#pwa-banner{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:#fff;border-top:2px solid #1D9E75;
+  padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.12);
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+#pwa-banner .pwa-inner{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto;}
+#pwa-banner .pwa-icon{
+  width:48px;height:48px;border-radius:12px;
+  background:linear-gradient(135deg,#1D9E75,#0891b2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+#pwa-banner .pwa-text{flex:1;}
+#pwa-banner .pwa-title{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:2px;}
+#pwa-banner .pwa-sub{font-size:12px;color:#64748b;}
+#pwa-banner .pwa-btns{display:flex;gap:8px;flex-shrink:0;}
+#pwa-btn-install{
+  padding:8px 16px;border-radius:10px;border:none;
+  background:#1D9E75;color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+}
+#pwa-btn-install:hover{background:#15803d;}
+#pwa-btn-close{
+  padding:8px 12px;border-radius:10px;border:1.5px solid #e2e8f0;
+  background:#fff;color:#94a3b8;font-size:13px;cursor:pointer;
+}
+
+/* iOS manual guide */
+#ios-guide{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:#fff;border-top:2px solid #0891b2;
+  padding:16px;box-shadow:0 -4px 20px rgba(0,0,0,.15);
+  animation:slideUp .3s ease;
+}
+#ios-guide .ios-inner{max-width:640px;margin:0 auto;}
+#ios-guide .ios-title{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+#ios-guide .ios-steps{display:flex;flex-direction:column;gap:8px;}
+#ios-guide .ios-step{display:flex;align-items:center;gap:10px;font-size:13px;color:#334155;}
+#ios-guide .ios-num{width:24px;height:24px;border-radius:50%;background:#0891b2;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#ios-guide .ios-close-btn{background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;padding:0;}
+
+/* Add to home button in header */
+#pwa-add-btn{
+  display:none;
+  padding:5px 12px;border-radius:20px;
+  border:1.5px solid #1D9E75;background:#f0fdf4;
+  color:#065f46;font-size:11px;font-weight:700;cursor:pointer;
+  margin-left:auto;
+}
+#pwa-add-btn:hover{background:#dcfce7;}
+</style>
+</head>
+<body>
+
+<div class="sheet-nav">
+  <div class="sheet-tab active" onclick="showSheet('fc')">📚 Flashcard</div>
+  <div class="sheet-tab" onclick="showSheet('quiz')">✏️ Bài Tập</div>
+  <button id="pwa-add-btn" onclick="pwaTrigger()">📲 Cài App</button>
+</div>
+
+<!-- Android install banner -->
+<div id="pwa-banner">
+  <div class="pwa-inner">
+    <div class="pwa-icon">📚</div>
+    <div class="pwa-text">
+      <div class="pwa-title">Cài Vocab Tool lên điện thoại</div>
+      <div class="pwa-sub">Dùng như app thật, không cần mạng</div>
+    </div>
+    <div class="pwa-btns">
+      <button id="pwa-btn-install" onclick="pwaInstall()">Cài ngay</button>
+      <button id="pwa-btn-close" onclick="pwaDismiss()">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS manual guide -->
+<div id="ios-guide">
+  <div class="ios-inner">
+    <div class="ios-title">
+      <span>📲 Thêm vào màn hình chính</span>
+      <button class="ios-close-btn" onclick="iosClose()">✕</button>
+    </div>
+    <div class="ios-steps">
+      <div class="ios-step"><div class="ios-num">1</div><span>Nhấn nút <strong>Chia sẻ</strong> <span style="font-size:16px">⎙</span> ở thanh dưới Safari</span></div>
+      <div class="ios-step"><div class="ios-num">2</div><span>Cuộn xuống → chọn <strong>"Thêm vào Màn hình chính"</strong></span></div>
+      <div class="ios-step"><div class="ios-num">3</div><span>Nhấn <strong>"Thêm"</strong> → App xuất hiện trên Home Screen! 🎉</span></div>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin-top:10px;text-align:center">⚠️ Chỉ hoạt động khi mở file bằng Safari trên iPhone/iPad</p>
+  </div>
+</div>
+
+<div class="sheet active" id="sheet-fc">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <h2 style="font-size:15px;font-weight:700;color:#334155">Flashcard</h2>
+    <div id="round-badge" class="round-badge">Vòng 1</div>
+  </div>
+  <div class="tabs" id="fc-tabs">
+    <button class="tab on" onclick="fcFilter('all',this)">Tất cả (<span id="fc-total-cnt">0</span>)</button>
+    <button class="tab" onclick="fcFilter('freq',this)">Tần suất</button>
+    <button class="tab" onclick="fcFilter('prep',this)">Giới từ</button>
+    <button class="tab" onclick="fcFilter('city',this)">Thành phố</button>
+    <button class="tab" onclick="fcFilter('home',this)">Quê hương</button>
+    <button class="tab" onclick="fcFilter('daily',this)">Hàng ngày</button>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar pg-green" id="fc-prog" style="width:0%"></div></div>
+  <div class="fc-meta">
+    <span id="fc-cn" style="font-weight:700">1/1</span>
+    <span id="fc-bdg" class="bdg">-</span>
+  </div>
+  <div id="fc-card-wrap">
+    <div class="card-area" onclick="fcFlip()">
+      <div class="card-inner" id="fc-card">
+        <div class="card-face">
+          <div class="fc-hint">nhấn để lật</div>
+          <div class="fc-word" id="fc-w">-</div>
+          <div class="fc-pos" id="fc-p">-</div>
+          <div class="fc-ipa" id="fc-i">-</div>
+          <button class="fc-audio-btn" id="fc-audio-btn" onclick="fcPlayAudio(event)">🔊 Nghe phát âm</button>
+          <button class="fc-img-hint-btn" id="fc-img-hint-btn" onclick="fcShowImg(event)">🖼️ Không nhớ? Xem hình gợi ý</button>
+          <div id="fc-img-panel" style="display:none"></div>
+        </div>
+        <div class="card-face card-back">
+          <div class="fc-hint">Nghĩa tiếng Việt</div>
+          <div class="fc-viet" id="fc-v">-</div>
+          <div class="fc-eng-back" id="fc-h">-</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-btns">
+      <button class="btn" onclick="fcPrev()">← Prev</button>
+      <button class="btn btn-forget" onclick="fcForget()">😕 Forget</button>
+      <button class="btn btn-remember" onclick="fcRemember()">✓ Remember</button>
+      <button class="btn" onclick="fcNext()">Next →</button>
+    </div>
+    <div class="fc-stats">
+      <span class="chip green">Nhớ: <strong id="fc-sk">0</strong></span>
+      <span class="chip red">Quên: <strong id="fc-fk">0</strong></span>
+      <span class="chip blue">Còn lại: <strong id="fc-sl">0</strong></span>
+    </div>
+    <button class="shuf-btn" onclick="fcShuffle()">🔀 Shuffle</button>
+  </div>
+  <div class="forget-panel" id="forget-panel" style="display:none">
+    <h3>🔁 Ôn lại từ chưa nhớ</h3>
+    <p>Bạn đã hoàn thành vòng này! Dưới đây là các từ <strong>Forget</strong>:</p>
+    <div class="forget-list" id="forget-list"></div>
+    <button class="btn-review" onclick="startForgetRound()">Ôn lại ngay →</button>
+  </div>
+  <div class="done-panel" id="done-panel" style="display:none">
+    <div style="font-size:44px;margin-bottom:8px">🏆</div>
+    <h3>Xuất sắc! Bạn đã nhớ tất cả!</h3>
+    <p style="font-size:13px;color:#4d7c0f;margin-top:6px">Tất cả đã được đánh dấu Remember.</p>
+    <br><button class="btn btn-remember" style="margin:0 auto;display:block" onclick="fcResetAll()">🔄 Làm lại từ đầu</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-quiz">
+  <h2 style="font-size:15px;font-weight:700;color:#334155;margin-bottom:12px">Bài tập giao tiếp (50 câu)</h2>
+  <div id="setup-area"></div>
+  <div id="quiz-area" style="display:none">
+    <div class="quiz-topbar">
+      <span class="qstat" id="q-label">Q 1/10</span>
+      <div class="qchips">
+        <span class="qchip">✓ <strong id="q-ok">0</strong></span>
+        <span class="qchip">✗ <strong id="q-no">0</strong></span>
+        <span class="qchip">Done: <strong id="q-done">0</strong>/<span id="q-total">0</span></span>
+      </div>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar pg-purple" id="q-prog" style="width:0%"></div></div>
+    <button class="grid-toggle" id="grid-toggle" onclick="toggleGrid()">▼ Bảng câu hỏi</button>
+    <div id="q-grid-wrap" style="display:none"></div>
+    <div id="q-content"></div>
+    <div class="q-nav">
+      <div class="nav-left">
+        <button class="btn" id="btn-prev" onclick="qGoto(qCur-1)" disabled>← Prev</button>
+        <button class="btn btn-nxt" id="btn-next" onclick="qGoto(qCur+1)">Next →</button>
+      </div>
+      <div class="jump-wrap">
+        <label>Đến câu:</label>
+        <select id="q-jump" onchange="qGoto(parseInt(this.value))"></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
+      <button class="btn btn-sub" onclick="qFinish()">Nộp bài ✓</button>
+      <button class="btn" onclick="qBackSetup()">🔄 Làm lại</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== SHEET NAV =====
+function showSheet(id){
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sheet-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sheet-'+id).classList.add('active');
+  document.querySelectorAll('.sheet-tab')[id==='fc'?0:1].classList.add('active');
+  ttsStop();
+}
+
+// ===== SVG ILLUSTRATIONS =====
+// Each entry: [emoji, bgColor, svgContent]
+// SVG is a small 200x110 scene illustrating the word
+const ILLUS = {
+  "always": ["🔁","#eff6ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#eff6ff"/><text x="100" y="52" text-anchor="middle" font-size="38">🔁</text><text x="100" y="80" text-anchor="middle" font-size="13" fill="#1d4ed8" font-weight="600">Every single time!</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#93c5fd">100% → luôn luôn</text></svg>`],
+  "usually": ["📅","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><text x="100" y="48" text-anchor="middle" font-size="32">📅</text><rect x="30" y="62" width="140" height="14" rx="7" fill="#bbf7d0"/><rect x="30" y="62" width="105" height="14" rx="7" fill="#22c55e"/><text x="100" y="74" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">70–80%</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#16a34a">thường thường</text></svg>`],
+  "often": ["📊","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><rect x="40" y="75" width="20" height="18" rx="3" fill="#fb923c"/><rect x="68" y="58" width="20" height="35" rx="3" fill="#f97316"/><rect x="96" y="45" width="20" height="48" rx="3" fill="#ea580c"/><rect x="124" y="58" width="20" height="35" rx="3" fill="#f97316"/><rect x="152" y="70" width="20" height="23" rx="3" fill="#fb923c"/><text x="100" y="105" text-anchor="middle" font-size="11" fill="#9a3412">50–60% · thường xuyên</text></svg>`],
+  "sometimes": ["🎲","#fdf4ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fdf4ff"/><text x="60" y="55" text-anchor="middle" font-size="30">☀️</text><text x="140" y="55" text-anchor="middle" font-size="30">🌧️</text><text x="100" y="80" text-anchor="middle" font-size="11" fill="#7e22ce" font-weight="600">Sometimes sunny, sometimes not</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#a855f7">30% · đôi khi</text></svg>`],
+  "rarely": ["🌚","#f8fafc",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f8fafc"/><text x="100" y="52" text-anchor="middle" font-size="36">🌚</text><text x="100" y="76" text-anchor="middle" font-size="12" fill="#475569" font-weight="600">Almost never happens</text><text x="100" y="96" text-anchor="middle" font-size="11" fill="#94a3b8">~1x/tháng · hiếm khi</text></svg>`],
+  "hardly": ["🚫","#fff5f5",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff5f5"/><text x="100" y="52" text-anchor="middle" font-size="36">🚫</text><text x="100" y="76" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="600">Almost zero</text><text x="100" y="96" text-anchor="middle" font-size="11" fill="#fca5a5">hầu như không</text></svg>`],
+  "never": ["⛔","#fff1f2",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff1f2"/><text x="100" y="52" text-anchor="middle" font-size="36">⛔</text><text x="100" y="76" text-anchor="middle" font-size="12" fill="#be123c" font-weight="600">It never happens — 0%</text><text x="100" y="96" text-anchor="middle" font-size="11" fill="#fda4af">không bao giờ</text></svg>`],
+  "in": ["🏙️","#f0f9ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0f9ff"/><text x="100" y="48" text-anchor="middle" font-size="30">🏙️</text><text x="100" y="72" text-anchor="middle" font-size="13" fill="#0369a1" font-weight="700">I live IN Ho Chi Minh City</text><text x="100" y="95" text-anchor="middle" font-size="11" fill="#7dd3fc">in + thành phố / quốc gia</text></svg>`],
+  "on": ["🖼️","#fdf4ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fdf4ff"/><rect x="60" y="20" width="80" height="55" rx="4" fill="#e9d5ff" stroke="#a855f7" stroke-width="2"/><text x="100" y="52" text-anchor="middle" font-size="22">🖼️</text><text x="100" y="88" text-anchor="middle" font-size="12" fill="#7e22ce" font-weight="600">A picture ON the wall</text><text x="100" y="105" text-anchor="middle" font-size="10" fill="#c084fc">on + bề mặt (sàn, tường)</text></svg>`],
+  "at": ["📍","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><text x="100" y="48" text-anchor="middle" font-size="30">📍</text><text x="100" y="72" text-anchor="middle" font-size="13" fill="#c2410c" font-weight="700">Meet me AT the café</text><text x="100" y="95" text-anchor="middle" font-size="11" fill="#fdba74">at + địa điểm cụ thể</text></svg>`],
+  "beside / next to": ["👫","#ecfdf5",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#ecfdf5"/><text x="70" y="52" text-anchor="middle" font-size="34">🧍</text><text x="130" y="52" text-anchor="middle" font-size="34">🧍</text><text x="100" y="78" text-anchor="middle" font-size="13" fill="#065f46" font-weight="700">Standing beside each other</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#6ee7b7">bên cạnh</text></svg>`],
+  "among": ["👥","#eff6ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#eff6ff"/><text x="40" y="48" text-anchor="middle" font-size="26">🧍</text><text x="100" y="42" text-anchor="middle" font-size="34">🧍</text><text x="160" y="48" text-anchor="middle" font-size="26">🧍</text><text x="100" y="78" text-anchor="middle" font-size="12" fill="#1d4ed8" font-weight="700">Among the three friends</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#93c5fd">giữa 3 người/vật trở lên</text></svg>`],
+  "far from": ["🗺️","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><text x="35" y="52" text-anchor="middle" font-size="26">🏠</text><line x1="65" y1="40" x2="145" y2="40" stroke="#f97316" stroke-width="2" stroke-dasharray="5,4"/><text x="165" y="52" text-anchor="middle" font-size="26">🏢</text><text x="100" y="38" text-anchor="middle" font-size="11" fill="#ea580c">50 km</text><text x="100" y="78" text-anchor="middle" font-size="12" fill="#c2410c" font-weight="700">Far from the office</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fdba74">cách xa</text></svg>`],
+  "around": ["🔄","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><circle cx="100" cy="50" r="28" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="6,4"/><text x="100" y="57" text-anchor="middle" font-size="24">🏠</text><text x="100" y="90" text-anchor="middle" font-size="12" fill="#15803d" font-weight="700">Restaurants around my house</text><text x="100" y="107" text-anchor="middle" font-size="10" fill="#86efac">xung quanh</text></svg>`],
+  "modern": ["🏗️","#eff6ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#eff6ff"/><rect x="25" y="38" width="30" height="62" rx="3" fill="#bfdbfe"/><rect x="63" y="22" width="36" height="78" rx="3" fill="#60a5fa"/><rect x="107" y="30" width="30" height="70" rx="3" fill="#3b82f6"/><rect x="145" y="42" width="28" height="58" rx="3" fill="#bfdbfe"/><rect x="0" y="98" width="200" height="12" fill="#93c5fd"/><text x="100" y="108" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="700">Modern city skyline</text></svg>`],
+  "convenient": ["🛒","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><text x="40" y="50" text-anchor="middle" font-size="26">🏥</text><text x="100" y="50" text-anchor="middle" font-size="26">🏫</text><text x="160" y="50" text-anchor="middle" font-size="26">🛒</text><text x="40" y="68" text-anchor="middle" font-size="9" fill="#15803d">hospital</text><text x="100" y="68" text-anchor="middle" font-size="9" fill="#15803d">school</text><text x="160" y="68" text-anchor="middle" font-size="9" fill="#15803d">shop</text><text x="100" y="88" text-anchor="middle" font-size="12" fill="#065f46" font-weight="700">All nearby — so convenient!</text><text x="100" y="106" text-anchor="middle" font-size="10" fill="#86efac">tiện lợi</text></svg>`],
+  "mild": ["🌤️","#fffbeb",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fffbeb"/><text x="100" y="50" text-anchor="middle" font-size="36">🌤️</text><text x="60" y="76" text-anchor="middle" font-size="11" fill="#b45309">Not too hot</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#d97706">😊</text><text x="140" y="76" text-anchor="middle" font-size="11" fill="#b45309">Not too cold</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fbbf24">thời tiết ôn hòa</text></svg>`],
+  "utilities": ["⚡","#fefce8",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fefce8"/><text x="40" y="52" text-anchor="middle" font-size="28">⚡</text><text x="100" y="52" text-anchor="middle" font-size="28">💧</text><text x="160" y="52" text-anchor="middle" font-size="28">🔥</text><text x="40" y="70" text-anchor="middle" font-size="9" fill="#92400e">điện</text><text x="100" y="70" text-anchor="middle" font-size="9" fill="#92400e">nước</text><text x="160" y="70" text-anchor="middle" font-size="9" fill="#92400e">gas</text><text x="100" y="92" text-anchor="middle" font-size="12" fill="#854d0e" font-weight="700">Basic utilities</text><text x="100" y="108" text-anchor="middle" font-size="10" fill="#fde68a">tiện ích cơ bản</text></svg>`],
+  "amenities": ["🏊","#ecfdf5",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#ecfdf5"/><text x="40" y="52" text-anchor="middle" font-size="26">🌳</text><text x="100" y="52" text-anchor="middle" font-size="26">🏊</text><text x="160" y="52" text-anchor="middle" font-size="26">📚</text><text x="40" y="70" text-anchor="middle" font-size="9" fill="#065f46">park</text><text x="100" y="70" text-anchor="middle" font-size="9" fill="#065f46">pool</text><text x="160" y="70" text-anchor="middle" font-size="9" fill="#065f46">library</text><text x="100" y="90" text-anchor="middle" font-size="12" fill="#15803d" font-weight="700">Public amenities</text><text x="100" y="107" text-anchor="middle" font-size="10" fill="#86efac">tiện nghi công cộng</text></svg>`],
+  "crowded": ["👥","#fff1f2",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff1f2"/><text x="25" y="48" font-size="18">🧍</text><text x="50" y="48" font-size="18">🧍</text><text x="75" y="48" font-size="18">🧍</text><text x="100" y="48" font-size="18">🧍</text><text x="125" y="48" font-size="18">🧍</text><text x="150" y="48" font-size="18">🧍</text><text x="35" y="70" font-size="18">🧍</text><text x="63" y="70" font-size="18">🧍</text><text x="91" y="70" font-size="18">🧍</text><text x="119" y="70" font-size="18">🧍</text><text x="147" y="70" font-size="18">🧍</text><text x="100" y="95" text-anchor="middle" font-size="12" fill="#be123c" font-weight="700">So crowded! 🚶</text><text x="100" y="108" text-anchor="middle" font-size="10" fill="#fda4af">đông đúc</text></svg>`],
+  "high-quality services": ["⭐","#fffbeb",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fffbeb"/><text x="60" y="50" text-anchor="middle" font-size="28">⭐</text><text x="100" y="50" text-anchor="middle" font-size="28">⭐</text><text x="140" y="50" text-anchor="middle" font-size="28">⭐</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#92400e" font-weight="700">5★ Service</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fde68a">dịch vụ chất lượng cao</text></svg>`],
+  "offer": ["🎁","#f0f9ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0f9ff"/><text x="100" y="52" text-anchor="middle" font-size="36">🎁</text><text x="100" y="78" text-anchor="middle" font-size="13" fill="#0369a1" font-weight="700">The city offers a lot</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#7dd3fc">cung cấp, đem lại</text></svg>`],
+  "education": ["🎓","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><text x="100" y="50" text-anchor="middle" font-size="36">🎓</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#065f46" font-weight="700">Talking about education...</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#86efac">giáo dục</text></svg>`],
+  "move to": ["📦","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><text x="45" y="52" text-anchor="middle" font-size="28">🏠</text><text x="100" y="48" text-anchor="middle" font-size="20">➡️</text><text x="155" y="52" text-anchor="middle" font-size="28">🏙️</text><text x="100" y="78" text-anchor="middle" font-size="13" fill="#c2410c" font-weight="700">Moving to the city</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fdba74">chuyển đến nơi khác</text></svg>`],
+  "fresh air": ["🌿","#ecfdf5",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#ecfdf5"/><text x="100" y="48" text-anchor="middle" font-size="34">🌿</text><text x="60" y="72" text-anchor="middle" font-size="18">🌬️</text><text x="140" y="72" text-anchor="middle" font-size="18">💨</text><text x="100" y="94" text-anchor="middle" font-size="12" fill="#065f46" font-weight="700">Breathe the fresh air!</text><text x="100" y="108" text-anchor="middle" font-size="10" fill="#86efac">không khí trong lành</text></svg>`],
+  "atmosphere": ["✨","#fdf4ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fdf4ff"/><text x="100" y="48" text-anchor="middle" font-size="32">🌅</text><text x="40" y="70" text-anchor="middle" font-size="18">✨</text><text x="160" y="70" text-anchor="middle" font-size="18">✨</text><text x="100" y="80" text-anchor="middle" font-size="12" fill="#7e22ce" font-weight="700">Peaceful atmosphere</text><text x="100" y="100" text-anchor="middle" font-size="11" fill="#c084fc">bầu không khí, không gian sống</text></svg>`],
+  "peaceful": ["🕊️","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><text x="100" y="50" text-anchor="middle" font-size="36">🕊️</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#15803d" font-weight="700">Quiet and peaceful life</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#86efac">yên bình, thanh thản</text></svg>`],
+  "hospitable": ["🤝","#ecfdf5",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#ecfdf5"/><text x="60" y="50" text-anchor="middle" font-size="28">👨</text><text x="140" y="50" text-anchor="middle" font-size="28">👩</text><text x="100" y="58" text-anchor="middle" font-size="22">🤝</text><text x="100" y="82" text-anchor="middle" font-size="12" fill="#065f46" font-weight="700">Welcoming &amp; hospitable</text><text x="100" y="100" text-anchor="middle" font-size="11" fill="#86efac">hiếu khách, thân thiện</text></svg>`],
+  "hometown": ["🏡","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><text x="100" y="50" text-anchor="middle" font-size="36">🏡</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#92400e" font-weight="700">My hometown ❤️</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fde68a">quê hương</text></svg>`],
+  "that's it": ["🙌","#f0fdf4",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0fdf4"/><text x="100" y="50" text-anchor="middle" font-size="34">🙌</text><text x="100" y="76" text-anchor="middle" font-size="14" fill="#065f46" font-weight="700">That's it! I'm done.</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#86efac">vậy thôi / hết rồi</text></svg>`],
+  "traffic jam": ["🚗","#fff1f2",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff1f2"/><rect x="0" y="55" width="200" height="18" fill="#e2e8f0"/><text x="18" y="70" font-size="20">🚗</text><text x="50" y="70" font-size="20">🚕</text><text x="82" y="70" font-size="20">🚙</text><text x="114" y="70" font-size="20">🚐</text><text x="146" y="70" font-size="20">🚗</text><text x="100" y="40" text-anchor="middle" font-size="12" fill="#be123c" font-weight="700">😤 Traffic jam again!</text><text x="100" y="100" text-anchor="middle" font-size="11" fill="#fda4af">tắc đường</text></svg>`],
+  "make mistakes": ["❌","#fff1f2",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff1f2"/><text x="100" y="48" text-anchor="middle" font-size="34">📝</text><text x="145" y="38" text-anchor="middle" font-size="22">❌</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#be123c" font-weight="700">Everyone makes mistakes!</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fda4af">mắc lỗi</text></svg>`],
+  "sleepy": ["😴","#eff6ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#eff6ff"/><text x="100" y="52" text-anchor="middle" font-size="36">😴</text><text x="140" y="35" text-anchor="middle" font-size="18" fill="#93c5fd">💤</text><text x="160" y="25" text-anchor="middle" font-size="14" fill="#bfdbfe">💤</text><text x="100" y="78" text-anchor="middle" font-size="13" fill="#1d4ed8" font-weight="700">I stayed up too late...</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#93c5fd">buồn ngủ</text></svg>`],
+  "lazy": ["🛋️","#fff7ed",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fff7ed"/><text x="100" y="50" text-anchor="middle" font-size="34">🛋️</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#92400e" font-weight="700">Too lazy to do anything!</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#fde68a">lười biếng</text></svg>`],
+  "guess": ["🤔","#fdf4ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#fdf4ff"/><text x="100" y="50" text-anchor="middle" font-size="36">🤔</text><text x="100" y="76" text-anchor="middle" font-size="14" fill="#7e22ce" font-weight="700">Can you guess? 🎯</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#c084fc">đoán</text></svg>`],
+  "still": ["⏳","#f0f9ff",`<svg width="200" height="110" viewBox="0 0 200 110"><rect width="200" height="110" rx="10" fill="#f0f9ff"/><text x="100" y="50" text-anchor="middle" font-size="36">⏳</text><text x="100" y="76" text-anchor="middle" font-size="13" fill="#0369a1" font-weight="700">She is STILL here</text><text x="100" y="98" text-anchor="middle" font-size="11" fill="#7dd3fc">vẫn còn</text></svg>`],
+};
+
+// ===== VOCAB DATA =====
+const VOCAB=[
+  ["always","adv.","/ˈɔːlweɪz/","luôn luôn (100%)","freq"],
+  ["usually","adv.","/ˈjuːʒuəli/","thường thường (70–80%)","freq"],
+  ["often","adv.","/ˈɒfən/","thường xuyên (50–60%)","freq"],
+  ["sometimes","adv.","/ˈsʌmtaɪmz/","đôi khi (30%)","freq"],
+  ["rarely","adv.","/ˈreərli/","hiếm khi (~1 lần/tháng)","freq"],
+  ["hardly","adv.","/ˈhɑːrdli/","hầu như không","freq"],
+  ["never","adv.","/ˈnevər/","không bao giờ (0%)","freq"],
+  ["in","prep.","/ɪn/","trong (thành phố, quốc gia)","prep"],
+  ["on","prep.","/ɒn/","trên (sàn, tường, trần nhà)","prep"],
+  ["at","prep.","/æt/","tại (địa điểm cụ thể)","prep"],
+  ["beside / next to","prep.","/bɪˈsaɪd/","bên cạnh","prep"],
+  ["among","prep.","/əˈmʌŋ/","giữa (3 người/vật trở lên)","prep"],
+  ["far from","prep. phr.","/fɑːr frɒm/","cách xa","prep"],
+  ["around","prep.","/əˈraʊnd/","xung quanh","prep"],
+  ["modern","adj.","/ˈmɒdərn/","hiện đại","city"],
+  ["convenient","adj.","/kənˈviːniənt/","tiện lợi","city"],
+  ["mild","adj.","/maɪld/","ôn hòa (thời tiết)","city"],
+  ["utilities","n.","/juːˈtɪlɪtiz/","tiện ích (điện, nước, gas)","city"],
+  ["amenities","n.","/əˈmiːnɪtiz/","tiện nghi công cộng","city"],
+  ["crowded","adj.","/ˈkraʊdɪd/","đông đúc","city"],
+  ["high-quality services","n. phr.","/haɪ ˈkwɒlɪti/","dịch vụ chất lượng cao","city"],
+  ["offer","v.","/ˈɒfər/","cung cấp, đem lại","city"],
+  ["education","n.","/ˌedʒʊˈkeɪʃən/","giáo dục","city"],
+  ["move to","v. phr.","/muːv tuː/","chuyển đến nơi khác","city"],
+  ["fresh air","n. phr.","/freʃ eər/","không khí trong lành","home"],
+  ["atmosphere","n.","/ˈætməsfɪər/","bầu không khí, không gian sống","home"],
+  ["peaceful","adj.","/ˈpiːsfəl/","yên bình, thanh thản","home"],
+  ["hospitable","adj.","/hɒˈspɪtəbəl/","hiếu khách, thân thiện","home"],
+  ["hometown","n.","/ˈhoʊmtaʊn/","quê hương","home"],
+  ["that's it","phrase","/ðæts ɪt/","vậy thôi / hết rồi","home"],
+  ["traffic jam","n. phr.","/ˈtræfɪk dʒæm/","tắc đường","daily"],
+  ["make mistakes","v. phr.","/meɪk mɪˈsteɪks/","mắc lỗi","daily"],
+  ["sleepy","adj.","/ˈsliːpi/","buồn ngủ","daily"],
+  ["lazy","adj.","/ˈleɪzi/","lười biếng","daily"],
+  ["guess","v.","/ɡes/","đoán","daily"],
+  ["still","adv.","/stɪl/","vẫn còn","daily"],
+];
+
+const FC_LABELS={freq:"Tần suất",prep:"Giới từ",city:"Thành phố",home:"Quê hương",daily:"Hàng ngày"};
+const FC_COLORS={freq:"#d1fae5|#065f46",prep:"#ede9fe|#4c1d95",city:"#ffedd5|#7c2d12",home:"#fef9c3|#713f12",daily:"#dbeafe|#1e3a8a"};
+
+let fcDeck=[],fcIdx=0,fcRemembered=new Set(),fcForgotten=new Set(),fcCurrentFilter='all',fcRound=1,fcMode='normal';
+function shu(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fcBuildDeck(f){return f==='all'?[...VOCAB]:VOCAB.filter(v=>v[4]===f);}
+
+function fcFilter(f,btn){
+  document.querySelectorAll('#fc-tabs .tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  fcCurrentFilter=f;fcDeck=fcBuildDeck(f);
+  fcRemembered.clear();fcForgotten.clear();fcIdx=0;fcRound=1;fcMode='normal';
+  updateRoundBadge();showCardWrap();fcUnflip();fcRender();
+}
+function fcShuffle(){shu(fcDeck);fcIdx=0;fcUnflip();fcRender();}
+function fcUnflip(){document.getElementById('fc-card').classList.remove('flipped');}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+
+function fcPlayAudio(e){
+  e.stopPropagation();
+  const word=document.getElementById('fc-w').textContent;
+  if(!word||word==='-')return;
+  const btn=document.getElementById('fc-audio-btn');
+  btn.classList.add('playing');btn.textContent='⏸ Đang phát...';
+  const u=new SpeechSynthesisUtterance(word);
+  u.lang='en-US';u.rate=0.85;
+  u.onend=()=>{btn.classList.remove('playing');btn.textContent='🔊 Nghe phát âm';};
+  window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+}
+
+function fcShowImg(e){
+  e.stopPropagation();
+  const card=getActiveCard();
+  if(!card)return;
+  const key=card[0].toLowerCase();
+  const illus=ILLUS[key];
+  const panel=document.getElementById('fc-img-panel');
+  const hintBtn=document.getElementById('fc-img-hint-btn');
+  if(!illus){
+    panel.innerHTML=`<div style="padding:12px;text-align:center;font-size:13px;color:#64748b">
+      <div style="font-size:36px;margin-bottom:6px">${['📖','💡','🧠','🌟'][Math.floor(Math.random()*4)]}</div>
+      <strong>${card[0]}</strong><br><span style="color:#94a3b8">${card[3]}</span>
+    </div>`;
+  } else {
+    panel.innerHTML=`<div class="fc-img-panel">${illus[2]}</div>`;
+  }
+  panel.style.display='block';
+  hintBtn.style.display='none';
+}
+
+function getActiveCard(){
+  const act=fcDeck.filter((_,i)=>!fcRemembered.has(i));
+  if(!act.length)return null;
+  return act[fcIdx%act.length];
+}
+
+function fcRender(){
+  const act=fcDeck.filter((_,i)=>!fcRemembered.has(i));
+  const tot=fcDeck.length,rem=act.length;
+  if(!rem){
+    const forgottenWords=fcDeck.filter((_,i)=>fcForgotten.has(i));
+    if(forgottenWords.length>0)showForgetPanel(forgottenWords);
+    else showDonePanel();
+    return;
+  }
+  const card=act[fcIdx%rem];
+  document.getElementById('fc-w').textContent=card[0];
+  document.getElementById('fc-p').textContent=card[1];
+  document.getElementById('fc-i').textContent=card[2];
+  document.getElementById('fc-v').textContent=card[3];
+  document.getElementById('fc-h').textContent=card[0];
+  document.getElementById('fc-audio-btn').textContent='🔊 Nghe phát âm';
+  document.getElementById('fc-audio-btn').classList.remove('playing');
+  document.getElementById('fc-img-hint-btn').style.display='';
+  document.getElementById('fc-img-panel').style.display='none';
+  document.getElementById('fc-img-panel').innerHTML='';
+  const col=(FC_COLORS[card[4]]||'#f1f5f9|#475569').split('|');
+  const bd=document.getElementById('fc-bdg');
+  bd.textContent=FC_LABELS[card[4]]||card[4];bd.style.background=col[0];bd.style.color=col[1];
+  const pos=(fcIdx%rem)+1;
+  document.getElementById('fc-cn').textContent=pos+'/'+rem;
+  document.getElementById('fc-prog').style.width=Math.round((pos/rem)*100)+'%';
+  document.getElementById('fc-sk').textContent=fcRemembered.size;
+  document.getElementById('fc-fk').textContent=fcForgotten.size;
+  document.getElementById('fc-sl').textContent=rem;
+  document.getElementById('fc-total-cnt').textContent=VOCAB.length;
+}
+
+function showCardWrap(){
+  document.getElementById('fc-card-wrap').style.display='block';
+  document.getElementById('forget-panel').style.display='none';
+  document.getElementById('done-panel').style.display='none';
+}
+function showForgetPanel(words){
+  document.getElementById('fc-card-wrap').style.display='none';
+  document.getElementById('done-panel').style.display='none';
+  document.getElementById('forget-panel').style.display='block';
+  document.getElementById('forget-list').innerHTML=words.map(w=>`<span class="forget-tag">${w[0]}</span>`).join('');
+  document.getElementById('fc-sk').textContent=fcRemembered.size;
+  document.getElementById('fc-fk').textContent=fcForgotten.size;
+  document.getElementById('fc-sl').textContent=0;
+}
+function showDonePanel(){
+  document.getElementById('fc-card-wrap').style.display='none';
+  document.getElementById('forget-panel').style.display='none';
+  document.getElementById('done-panel').style.display='block';
+}
+function updateRoundBadge(){
+  const b=document.getElementById('round-badge');
+  b.textContent=fcMode==='forget-review'?'🔁 Ôn lại: Vòng '+fcRound:'Vòng '+fcRound;
+  b.className='round-badge'+(fcMode==='forget-review'?' forget-mode':'');
+}
+function startForgetRound(){
+  fcDeck=fcDeck.filter((_,i)=>fcForgotten.has(i));
+  shu(fcDeck);fcRemembered.clear();fcForgotten.clear();fcIdx=0;fcRound++;fcMode='forget-review';
+  updateRoundBadge();showCardWrap();fcUnflip();fcRender();
+}
+function fcRemember(){
+  const act=fcDeck.filter((_,i)=>!fcRemembered.has(i));
+  if(!act.length)return;
+  const ri=fcDeck.indexOf(act[fcIdx%act.length]);
+  fcRemembered.add(ri);fcForgotten.delete(ri);
+  const nr=fcDeck.filter((_,i)=>!fcRemembered.has(i)).length;
+  if(nr>0)fcIdx=fcIdx%nr;
+  fcUnflip();fcRender();
+}
+function fcForget(){
+  const act=fcDeck.filter((_,i)=>!fcRemembered.has(i));
+  if(!act.length)return;
+  const ri=fcDeck.indexOf(act[fcIdx%act.length]);
+  fcForgotten.add(ri);
+  const nr=fcDeck.filter((_,i)=>!fcRemembered.has(i)).length;
+  if(nr>0)fcIdx=(fcIdx+1)%nr;
+  fcUnflip();fcRender();
+}
+function fcNext(){const r=fcDeck.filter((_,i)=>!fcRemembered.has(i)).length;if(!r)return;fcIdx=(fcIdx+1)%r;fcUnflip();fcRender();}
+function fcPrev(){const r=fcDeck.filter((_,i)=>!fcRemembered.has(i)).length;if(!r)return;fcIdx=(fcIdx-1+r)%r;fcUnflip();fcRender();}
+function fcResetAll(){fcDeck=fcBuildDeck(fcCurrentFilter);fcRemembered.clear();fcForgotten.clear();fcIdx=0;fcRound=1;fcMode='normal';updateRoundBadge();showCardWrap();fcUnflip();fcRender();}
+fcDeck=fcBuildDeck('all');fcRender();
+
+// ===== TTS =====
+function ttsGetRate(){const s=document.getElementById('tts-speed');return s?parseFloat(s.value):0.9;}
+function stripHTML(s){return s.replace(/<[^>]*>/g,'').replace(/&nbsp;/g,' ').trim();}
+function ttsClean(s){return stripHTML(s).replace(/_{2,}/g,', ').replace(/_/g,', ').replace(/\s{2,}/g,' ').trim();}
+function ttsStop(){
+  window.speechSynthesis.cancel();
+  document.querySelectorAll('.tts-btn,.tts-all-btn').forEach(b=>{
+    b.classList.remove('active');
+    if(b.dataset.orig)b.textContent=b.dataset.orig;
+  });
+}
+function ttsPlayQuestion(){
+  const qi=qSelected[qCur];const q=QUESTIONS[qi];
+  const btn=document.getElementById('tts-q-btn');if(!btn)return;
+  if(btn.classList.contains('active')){ttsStop();return;}
+  ttsStop();
+  btn.classList.add('active');btn.textContent='⏸ Dừng';
+  const text=q.passage?(ttsClean(q.passage)+'. '+ttsClean(q.q)):ttsClean(q.q);
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=ttsGetRate();
+  u.onend=()=>{btn.classList.remove('active');btn.textContent='🔊 Câu hỏi';};
+  u.onerror=()=>{btn.classList.remove('active');btn.textContent='🔊 Câu hỏi';};
+  window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+}
+function ttsPlayOpt(si){
+  const qi=qSelected[qCur];const so=qShuffOpts[qi];
+  const text=ttsClean(so[si].o); // no letter prefix
+  const btn=document.getElementById('tts-opt-'+si);if(!btn)return;
+  if(btn.classList.contains('active')){ttsStop();return;}
+  ttsStop();
+  const lets=['A','B','C','D'];
+  btn.classList.add('active');btn.dataset.orig=lets[si];btn.textContent='⏸';
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=ttsGetRate();
+  u.onend=()=>{btn.classList.remove('active');btn.textContent=lets[si];};
+  u.onerror=()=>{btn.classList.remove('active');btn.textContent=lets[si];};
+  window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+}
+function ttsPlayAll(){
+  const qi=qSelected[qCur];const q=QUESTIONS[qi];const so=qShuffOpts[qi];
+  const allBtn=document.getElementById('tts-all-btn');if(!allBtn)return;
+  if(allBtn.classList.contains('active')){ttsStop();return;}
+  ttsStop();
+  allBtn.classList.add('active');allBtn.textContent='⏸ Dừng';
+  const qText=q.passage?(ttsClean(q.passage)+'. '+ttsClean(q.q)):ttsClean(q.q);
+  const lets=['A','B','C','D'];
+  const items=[
+    {text:qText,btnId:'tts-q-btn',orig:'🔊 Câu hỏi'},
+    {text:ttsClean(so[0].o),btnId:'tts-opt-0',orig:lets[0]},
+    {text:ttsClean(so[1].o),btnId:'tts-opt-1',orig:lets[1]},
+    {text:ttsClean(so[2].o),btnId:'tts-opt-2',orig:lets[2]},
+    {text:ttsClean(so[3].o),btnId:'tts-opt-3',orig:lets[3]},
+  ];
+  let step=0;
+  function next(){
+    if(step>=items.length||!allBtn.classList.contains('active')){
+      allBtn.classList.remove('active');allBtn.textContent='▶ Đọc tất cả';
+      items.forEach(it=>{const b=document.getElementById(it.btnId);if(b){b.classList.remove('active');b.textContent=it.orig;}});
+      return;
+    }
+    const item=items[step];
+    const itemBtn=document.getElementById(item.btnId);
+    if(itemBtn){itemBtn.classList.add('active');itemBtn.textContent='⏸';}
+    const u=new SpeechSynthesisUtterance(item.text);
+    u.lang='en-US';u.rate=ttsGetRate();
+    u.onend=()=>{if(itemBtn){itemBtn.classList.remove('active');itemBtn.textContent=item.orig;}step++;setTimeout(next,380);};
+    u.onerror=()=>{if(itemBtn){itemBtn.classList.remove('active');itemBtn.textContent=item.orig;}step++;setTimeout(next,200);};
+    window.speechSynthesis.speak(u);
+  }
+  next();
+}
+
+// ===== QUIZ =====
+const QUESTIONS=[
+  {sec:"A",tag:"Phần A – Từ vựng",q:"There is always a terrible ___ on this road at 7 in the morning.",opts:["traffic jam","traffic light","rush hour","busy road"],ans:0,ex:"Traffic jam = tắc đường."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"Don't worry — everyone ___ sometimes. It's part of learning.",opts:["makes mistakes","makes noise","makes excuses","makes friends"],ans:0,ex:"Make mistakes = mắc lỗi."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"I feel really ___ today. I stayed up until midnight studying.",opts:["sleepy","lazy","crowded","mild"],ans:0,ex:"Sleepy = buồn ngủ — do thức khuya, thiếu ngủ."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"He is so ___! He never does any housework even though he has plenty of free time.",opts:["lazy","sleepy","crowded","modern"],ans:0,ex:"Lazy = lười biếng — tính cách không muốn làm việc."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"Can you ___ why I start working after 5 pm every day?",opts:["guess","offer","move","still"],ans:0,ex:"Guess = đoán."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"My sister ___ lives in Hanoi. She hasn't decided to move yet.",opts:["still","hardly","never","always"],ans:0,ex:"Still = vẫn còn — tình trạng chưa thay đổi."},
+  {sec:"A",tag:"Phần A – Từ vựng [Ngữ pháp: Trạng từ tần suất]",q:"She ___ forgets her keys. It happens every single morning without fail.",opts:["always","sometimes","rarely","never"],ans:0,ex:"Always (100%) — trạng từ tần suất đứng trước động từ chính."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"I love living here because everything is so ___. Shops, hospitals, schools — all nearby.",opts:["convenient","peaceful","mild","hospitable"],ans:0,ex:"Convenient = tiện lợi."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"My hometown is not ___ at all. Life there is slow and quiet.",opts:["crowded","modern","mild","hospitable"],ans:0,ex:"Crowded = đông đúc."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"The city ___ excellent schools, hospitals and entertainment options.",opts:["offers","guesses","moves","makes"],ans:0,ex:"Offer = cung cấp, đem lại."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"There are many ___ in this area — parks, gyms, and a public library.",opts:["amenities","utilities","education","traffic"],ans:0,ex:"Amenities = tiện nghi công cộng. Utilities = tiện ích cơ bản."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"The ___ in my hometown is still clean and fresh. No pollution at all.",opts:["atmosphere","utilities","amenities","traffic"],ans:0,ex:"Atmosphere = bầu không khí, không gian sống."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"My grandparents live in a village. The people there are so ___ — they always welcome visitors with food.",opts:["hospitable","crowded","lazy","modern"],ans:0,ex:"Hospitable = hiếu khách, thân thiện."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"The weather in Da Lat is very ___. Not too hot, not too cold all year round.",opts:["mild","crowded","modern","peaceful"],ans:0,ex:"Mild = ôn hòa (thời tiết dễ chịu)."},
+  {sec:"A",tag:"Phần A – Từ vựng [Ngữ pháp: IN]",q:"My family lives ___ Ho Chi Minh City.",opts:["in","on","at","among"],ans:0,ex:"In = trong — dùng với thành phố, quốc gia."},
+  {sec:"A",tag:"Phần A – Từ vựng [Ngữ pháp: ON]",q:"There is a beautiful painting hanging ___ the wall in our living room.",opts:["on","in","at","around"],ans:0,ex:"On = trên bề mặt (tường, sàn, trần)."},
+  {sec:"A",tag:"Phần A – Từ vựng [Ngữ pháp: AT]",q:"Let's meet ___ the cafe near the park.",opts:["at","in","on","beside"],ans:0,ex:"At = tại — dùng với địa điểm cụ thể."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"Talking about ___, my son will definitely study better in Ho Chi Minh City.",opts:["education","traffic","weather","lifestyle"],ans:0,ex:"Education = giáo dục — cụm mở đầu chủ đề mới."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"I can't ___ anywhere else. My job is here and my whole life is here.",opts:["move to","offer","guess","still"],ans:0,ex:"Move to = chuyển đến."},
+  {sec:"A",tag:"Phần A – Từ vựng",q:"The air is clean, people are kind, and life is slow. ___! Those are all the reasons I love my hometown.",opts:["That's it","Guess what","Still","Never mind"],ans:0,ex:"That's it = vậy thôi, hết rồi."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Why do you always start working so late — after 5 pm?"',opts:["Because there is always a traffic jam in the morning, so I avoid it.","Because I am very hospitable.","Because my hometown is peaceful.","Because the weather is mild."],ans:0,ex:"Giải thích lý do tránh tắc đường."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"I heard you made a lot of mistakes in the presentation. Are you okay?"',opts:["It's fine. Everyone makes mistakes sometimes. I'll do better next time.","Yes, the traffic jam was terrible.","I am still living in the same city.","I hardly go there."],ans:0,ex:"Tự an ủi, dùng 'make mistakes' đúng ngữ cảnh."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"You look really tired. Did you sleep well last night?"',opts:["Not really. I was up until midnight and now I'm so sleepy.","Yes, the city is very convenient.","I always go to the gym.","The atmosphere is peaceful."],ans:0,ex:"Sleepy = buồn ngủ — phản hồi tự nhiên khi mệt."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Why do you prefer living in Ho Chi Minh City over your hometown?"',opts:["Because it's more convenient and offers high-quality services.","Because the air is fresh and clean.","Because people are very hospitable.","Because the atmosphere is peaceful."],ans:0,ex:"Convenient + high-quality services = lý do chọn thành phố."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"What do you miss most about your hometown?"',opts:["I miss the fresh air and the peaceful atmosphere most.","I miss the traffic jam every morning.","I miss the crowded streets.","I miss the high-quality services."],ans:0,ex:"Fresh air + peaceful atmosphere = đặc trưng quê hương."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Is your office far from your house?"',opts:["Not really. It's only about 3 kilometres away.","Yes, the weather is always mild.","I am still living there.","There are lots of amenities around."],ans:0,ex:"Câu trả lời trực tiếp cho câu hỏi khoảng cách."},
+  {sec:"B",tag:"Phần B – Hỏi đáp [Ngữ pháp: So sánh hơn]",q:'"Do you think Ho Chi Minh City is better than your hometown for raising kids?"',opts:["Yes, I think the education is much better here than in my hometown.","I rarely go to my hometown.","The weather is mild in both places.","People are hospitable everywhere."],ans:0,ex:"So sánh hơn 'better...than'."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Why don\'t you ever move back to your hometown?"',opts:["My job is here. I can't move to any other place.","The traffic jam is terrible here.","People are very hospitable there.","I always wake up early."],ans:0,ex:"Giải thích lý do không thể rời thành phố."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"I\'m thinking of moving to the countryside. What do you think?"',opts:["That sounds great! The atmosphere there is much more peaceful.","Yes, the traffic jam here is terrible.","I always go there on weekends.","The weather is mild in summer."],ans:0,ex:"Đồng ý + giải thích ưu điểm nông thôn."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"How often do you visit your hometown?"',opts:["I usually go back twice a year — during Tet and summer.","Yes, I still live there.","It is far from the city centre.","The people are very friendly."],ans:0,ex:"'How often' cần trả lời bằng frequency adverb."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Are there any good parks or facilities near your house?"',opts:["Yes! There are lots of amenities around — a park, a gym, and a swimming pool.","I hardly ever stay at home.","The atmosphere is peaceful.","It's not far from the market."],ans:0,ex:"Amenities = tiện nghi công cộng."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"What\'s the weather like in your hometown?"',opts:["It's very mild — not too hot and not too cold all year.","The streets are always crowded.","There are many high-quality services.","People make mistakes sometimes."],ans:0,ex:"Mild = ôn hòa."},
+  {sec:"B",tag:"Phần B – Hỏi đáp [Ngữ pháp: Why don't you...?]",q:'"I feel so tired every morning because of the traffic jam."',opts:["Why don't you start work later to avoid the rush hour?","Yes, the city is very modern.","I still live in the same place.","The amenities here are excellent."],ans:0,ex:"'Why don't you...?' = gợi ý ai đó làm gì."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Is your hometown a big city or a small town?"',opts:["It's a small town. The atmosphere is still very peaceful and the air is clean.","Yes, there are lots of utilities.","I rarely make mistakes.","It offers high-quality education."],ans:0,ex:"Mô tả quê: peaceful atmosphere, clean air."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Your brother is 16 this summer, right? What are his plans?"',opts:["Yes! He's thinking about which school to choose. Education is so important at this age.","He is very hospitable.","He always makes the atmosphere peaceful.","He rarely uses utilities."],ans:0,ex:"Giáo dục — phù hợp khi bàn về kế hoạch học sinh 16 tuổi."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"I know it\'s not a good idea, but I\'m so lazy to cook tonight."',opts:["I totally understand! Why don't we just order some food then?","Yes, the traffic is always terrible.","I still live near a restaurant.","The amenities here are convenient."],ans:0,ex:"Đồng cảm + gợi ý 'Why don't we...'"},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Are there any chances for me and my friends to join the club?"',opts:["I'm afraid there aren't any spots left. They're fully booked.","Yes, the weather is mild.","I always join clubs.","The atmosphere is peaceful there."],ans:0,ex:"'I'm afraid there aren't any...' = từ chối lịch sự."},
+  {sec:"B",tag:"Phần B – Hỏi đáp [Ngữ pháp: Hiện tại tiếp diễn]",q:'"What are you doing right now? You look distracted."',opts:["Sorry, I'm still thinking about the traffic jam this morning. It was terrible.","I rarely go outside.","The city offers many services.","I am a lazy person."],ans:0,ex:"Hiện tại tiếp diễn 'I'm thinking' — hành động đang xảy ra."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"Why do people say Ho Chi Minh City is a good place to live?"',opts:["Because it's modern, convenient, and offers lots of utilities and amenities.","Because the atmosphere is peaceful.","Because people are very hospitable.","Because the air is very fresh."],ans:0,ex:"Modern + convenient + utilities + amenities = ưu điểm thành phố."},
+  {sec:"B",tag:"Phần B – Hỏi đáp",q:'"So that\'s everything you wanted to say about why you love your city?"',opts:["Yes, that's it! Modern, convenient, great services — I can't imagine living anywhere else.","No, I still live in my hometown.","I hardly ever visit there.","The weather is mild and peaceful."],ans:0,ex:"'That's it!' = vậy thôi — xác nhận đã nói xong."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 1)",passage:"<b>Nam:</b> I hate Monday mornings. There's always a terrible traffic jam on my road and I'm always late.<br><b>Linh:</b> I know! That's why I usually leave the house before 6 am to avoid it.<br><b>Nam:</b> Really? I could never do that. I'm just too lazy to wake up early.",q:"Why does Linh leave the house before 6 am?",opts:["To avoid the traffic jam","Because she works early","Because she is lazy","Because the weather is mild"],ans:0,ex:"Linh nói 'to avoid it' — tránh tắc đường."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 1)",passage:"<b>Nam:</b> I hate Monday mornings. There's always a terrible traffic jam on my road and I'm always late.<br><b>Linh:</b> I know! That's why I usually leave the house before 6 am to avoid it.<br><b>Nam:</b> Really? I could never do that. I'm just too lazy to wake up early.",q:"What does the word 'lazy' tell us about Nam?",opts:["He does not want to make the effort to wake up early","He is always sleepy because of the traffic","He never goes to work on Mondays","He usually leaves before 6 am"],ans:0,ex:"Lazy = lười biếng — không muốn cố gắng dậy sớm."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 2)",passage:"<b>Hoa:</b> I miss my hometown so much. The air is so fresh and people are very hospitable.<br><b>Lan:</b> I understand. But don't you think the city offers more opportunities?<br><b>Hoa:</b> That's true. That's why I'm still here, I guess.",q:"Why is Hoa still living in the city?",opts:["Because the city offers more opportunities","Because she loves the traffic jam","Because the air is fresh","Because people are hospitable"],ans:0,ex:"Hoa đồng ý 'the city offers more opportunities'."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 2)",passage:"<b>Hoa:</b> I miss my hometown so much. The air is so fresh and people are very hospitable.<br><b>Lan:</b> I understand. But don't you think the city offers more opportunities?<br><b>Hoa:</b> That's true. That's why I'm still here, I guess.",q:"What does 'hospitable' mean in this conversation?",opts:["Friendly and welcoming to visitors","Modern and convenient","Crowded and busy","Fresh and clean"],ans:0,ex:"Hospitable = hiếu khách, thân thiện."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 3)",passage:"<b>Text from Minh to Tuan:</b><br>Hey! Are you free this weekend? There's a new cafe that opened beside the park near my house. The neighborhood has so many new amenities now — a gym, a library, and this cafe! It's becoming really modern and convenient. We should check it out!",q:"What is the main purpose of Minh's message?",opts:["To invite Tuan to visit a new cafe","To complain about the neighborhood","To ask Tuan about the weather","To talk about education"],ans:0,ex:"Minh mời Tuan đi cafe mới."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 3)",passage:"<b>Text from Minh to Tuan:</b><br>Hey! Are you free this weekend? There's a new cafe that opened beside the park near my house. The neighborhood has so many new amenities now — a gym, a library, and this cafe! It's becoming really modern and convenient. We should check it out!",q:"Which word best describes how Minh feels about his neighborhood?",opts:["Positive and excited","Worried and unhappy","Bored and lazy","Tired and sleepy"],ans:0,ex:"Minh dùng từ tích cực: modern, convenient, so many new amenities."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 4)",passage:"<b>Class discussion:</b><br><b>Teacher:</b> What are some reasons people prefer living in big cities?<br><b>Student A:</b> The city offers high-quality services and education.<br><b>Student B:</b> It's also very convenient — everything is nearby.<br><b>Student C:</b> But it's crowded and the traffic jam is always terrible!<br><b>Teacher:</b> And what about hometowns?<br><b>Student A:</b> The atmosphere is still peaceful and the air is fresh.",q:"Which student gives a negative opinion about living in the city?",opts:["Student C","Student A","Student B","The teacher"],ans:0,ex:"Student C nói 'crowded' và 'traffic jam is terrible'."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 4)",passage:"<b>Class discussion:</b><br><b>Teacher:</b> What are some reasons people prefer living in big cities?<br><b>Student A:</b> The city offers high-quality services and education.<br><b>Student B:</b> It's also very convenient — everything is nearby.<br><b>Student C:</b> But it's crowded and the traffic jam is always terrible!<br><b>Teacher:</b> And what about hometowns?<br><b>Student A:</b> The atmosphere is still peaceful and the air is fresh.",q:"What does Student A say about hometowns?",opts:["The atmosphere is peaceful and the air is fresh","The traffic is terrible","The services are high-quality","It is very crowded"],ans:0,ex:"Student A nói 'atmosphere is peaceful and the air is fresh'."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 5)",passage:"<b>Blog by Lan:</b><br>People often ask me why I still live in Ho Chi Minh City. Honestly, there are many reasons. The city is modern and convenient. It offers lots of utilities and amenities. Talking about education, my son studies at one of the best schools here. But most importantly, my job is here — I simply can't move to any other place. That's it!",q:"What does Lan say is the most important reason she stays in Ho Chi Minh City?",opts:["Her job is there","The city is modern","The amenities are good","Her son's school is there"],ans:0,ex:"Lan nói 'most importantly, my job is here'."},
+  {sec:"C",tag:"Phần C – Đọc hiểu (Đoạn 5)",passage:"<b>Blog by Lan:</b><br>People often ask me why I still live in Ho Chi Minh City. Honestly, there are many reasons. The city is modern and convenient. It offers lots of utilities and amenities. Talking about education, my son studies at one of the best schools here. But most importantly, my job is here — I simply can't move to any other place. That's it!",q:"What does 'That's it!' suggest at the end of Lan's blog post?",opts:["She has finished listing all her reasons","She is unhappy about the city","She wants to move to another place","She is asking a question"],ans:0,ex:"'That's it!' = vậy thôi — báo hiệu đã nói hết ý."},
+];
+
+let qSelected=[],qCur=0,qAnswers={},qShuffOpts={},qGridVisible=false,qCount=10;
+function qShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function renderSetup(){
+  document.getElementById('setup-area').innerHTML=`<div class="setup-card">
+    <div class="setup-title">Chọn số câu muốn làm</div>
+    <div class="setup-sub">Rút ngẫu nhiên từ bộ ${QUESTIONS.length} câu (Phần A, B, C)</div>
+    <div class="count-row">${[10,15,20,25,30,QUESTIONS.length].map(n=>`<button class="cnt-btn${n===10?' on':''}" onclick="pickCount(${n},this)">${n===QUESTIONS.length?'Tất cả ('+n+')':n+' câu'}</button>`).join('')}</div>
+    <button class="start-btn" onclick="startQuiz()">Bắt đầu ▶</button>
+  </div>`;
+}
+function pickCount(n,btn){qCount=n;document.querySelectorAll('.cnt-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function startQuiz(){
+  const pool=qShuffle([...Array(QUESTIONS.length).keys()]);
+  qSelected=pool.slice(0,qCount);qCur=0;qAnswers={};qShuffOpts={};qGridVisible=false;
+  qSelected.forEach(qi=>{const so=QUESTIONS[qi].opts.map((o,i)=>({o,i}));qShuffle(so);qShuffOpts[qi]=so;});
+  document.getElementById('setup-area').style.display='none';
+  document.getElementById('quiz-area').style.display='block';
+  document.getElementById('q-total').textContent=qSelected.length;
+  document.getElementById('q-grid-wrap').style.display='none';
+  document.getElementById('grid-toggle').textContent='▼ Bảng câu hỏi';
+  buildJump();qRender();
+}
+function buildJump(){document.getElementById('q-jump').innerHTML=qSelected.map((_,i)=>`<option value="${i}">Câu ${i+1}</option>`).join('');}
+function renderQGrid(){
+  document.getElementById('q-grid-wrap').innerHTML=`<div class="q-grid">${qSelected.map((qi,i)=>{
+    let cls='qdot';
+    if(i===qCur)cls+=' d-cur';
+    else if(qAnswers[qi]!==undefined)cls+=qAnswers[qi].ok?' d-ok':' d-no';
+    return `<div class="${cls}" onclick="qGoto(${i})">${i+1}</div>`;
+  }).join('')}</div>`;
+}
+function toggleGrid(){
+  qGridVisible=!qGridVisible;
+  document.getElementById('q-grid-wrap').style.display=qGridVisible?'block':'none';
+  document.getElementById('grid-toggle').textContent=(qGridVisible?'▲':'▼')+' Bảng câu hỏi';
+  if(qGridVisible)renderQGrid();
+}
+function qRender(){
+  ttsStop();
+  const qi=qSelected[qCur];const q=QUESTIONS[qi];const tot=qSelected.length;
+  document.getElementById('q-label').textContent='Q '+(qCur+1)+'/'+tot;
+  document.getElementById('q-jump').value=qCur;
+  const pbar=document.getElementById('q-prog');
+  pbar.style.width=Math.round(((qCur+1)/tot)*100)+'%';
+  pbar.className='prog-bar '+(q.sec==='A'?'pg-purple':q.sec==='B'?'pg-teal':'pg-orange');
+  if(qGridVisible)renderQGrid();
+  updateStats();
+  const done=qAnswers[qi]!==undefined;
+  const so=qShuffOpts[qi];const corrIdx=so.findIndex(x=>x.i===q.ans);
+  const lets=['A','B','C','D'];
+  const optsHTML=so.map((item,si)=>{
+    let cls='qopt';
+    if(done){if(si===corrIdx)cls+=' reveal';else if(si===qAnswers[qi].sel)cls+=' no';}
+    return `<button class="${cls}" ${done?'disabled':''} onclick="qCheck(${si},${corrIdx})"><span style="font-weight:700;color:#94a3b8;margin-right:6px">${lets[si]}.</span>${item.o}</button>`;
+  }).join('');
+  const passHTML=q.passage?`<div class="passage">${q.passage}</div>`:'';
+  const fbHTML=done?`<div class="fb show ${qAnswers[qi].ok?'ok':'no'}">${qAnswers[qi].ok?'✓ Correct!':'✗ Not quite.'} ${q.ex}</div>`:'';
+  const tagCls=q.sec==='A'?'tag-a':q.sec==='B'?'tag-b':'tag-c';
+  const qt=q.q.replace(/___/g,'<span class="blank">___</span>');
+  const audioBar=`<div class="q-audio-bar">
+    <span class="q-audio-lbl">🔊</span>
+    <button class="tts-btn" id="tts-q-btn" data-orig="🔊 Câu hỏi" onclick="ttsPlayQuestion()">🔊 Câu hỏi</button>
+    <span style="color:#cbd5e1">|</span>
+    ${[0,1,2,3].map(i=>`<button class="tts-btn" id="tts-opt-${i}" data-orig="${lets[i]}" onclick="ttsPlayOpt(${i})">${lets[i]}</button>`).join('')}
+    <select class="tts-speed-sel" id="tts-speed"><option value="1.0">1x</option><option value="0.9" selected>0.9x</option><option value="0.75">0.75x</option><option value="0.6">Chậm</option></select>
+    <button class="tts-all-btn" id="tts-all-btn" data-orig="▶ Đọc tất cả" onclick="ttsPlayAll()">▶ Đọc tất cả</button>
+  </div>`;
+  document.getElementById('q-content').innerHTML=`<div class="q-card"><span class="q-part-tag ${tagCls}">${q.tag}</span>${passHTML}${audioBar}<div class="q-text">${qt}</div><div class="q-opts">${optsHTML}</div>${fbHTML}</div>`;
+  document.getElementById('btn-prev').disabled=qCur===0;
+  document.getElementById('btn-next').disabled=qCur===qSelected.length-1;
+}
+function qCheck(sel,corr){
+  const qi=qSelected[qCur];
+  if(qAnswers[qi]!==undefined)return;
+  qAnswers[qi]={sel,ok:sel===corr};updateStats();qRender();
+}
+function updateStats(){
+  let ok=0,no=0;Object.values(qAnswers).forEach(a=>{if(a.ok)ok++;else no++;});
+  document.getElementById('q-ok').textContent=ok;
+  document.getElementById('q-no').textContent=no;
+  document.getElementById('q-done').textContent=Object.keys(qAnswers).length;
+}
+function qGoto(i){if(i<0||i>=qSelected.length)return;qCur=i;document.getElementById('q-jump').value=i;qRender();}
+function qFinish(){
+  let ok=0,no=0,skip=0;
+  qSelected.forEach(qi=>{if(qAnswers[qi]===undefined)skip++;else if(qAnswers[qi].ok)ok++;else no++;});
+  const tot=qSelected.length,pct=Math.round((ok/tot)*100);
+  const msg=pct>=90?'Xuất sắc! Bạn học rất tốt.':pct>=70?'Tốt lắm! Ôn thêm là hoàn hảo.':pct>=50?'Khá ổn! Xem lại flashcard nhé.':'Cố lên! Ôn lại từ vựng nhé.';
+  document.getElementById('q-content').innerHTML=`<div class="result-box"><div class="res-score">${ok}/${tot}</div><div class="res-pct">${pct}% đúng</div><div class="res-msg">${msg}</div><div class="res-grid"><div class="res-card"><div class="res-lbl">Correct</div><div class="res-val" style="color:#16a34a">${ok}</div></div><div class="res-card"><div class="res-lbl">Wrong</div><div class="res-val" style="color:#dc2626">${no}</div></div><div class="res-card"><div class="res-lbl">Skipped</div><div class="res-val" style="color:#94a3b8">${skip}</div></div></div></div>`;
+  document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;
+  if(qGridVisible)renderQGrid();ttsStop();
+}
+function qBackSetup(){ttsStop();document.getElementById('quiz-area').style.display='none';document.getElementById('setup-area').style.display='block';renderSetup();}
+renderSetup();
+
+// ===== PWA SYSTEM =====
+let pwaDeferred = null;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isAndroid = /Android/.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Generate inline app icon as base64 SVG
+function genIcon(size) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <rect width="${size}" height="${size}" rx="${size*0.22}" fill="#1D9E75"/>
+    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="${size*0.5}" font-family="sans-serif">📚</text>
+    <text x="50%" y="82%" text-anchor="middle" font-size="${size*0.12}" font-family="sans-serif" fill="rgba(255,255,255,0.85)" font-weight="bold">VOCAB</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
+// Inject manifest dynamically (inline base64)
+function injectManifest() {
+  const icon192 = genIcon(192);
+  const icon512 = genIcon(512);
+  const manifest = {
+    name: 'Vocab Tool – Tiếng Anh Giao Tiếp',
+    short_name: 'Vocab Tool',
+    description: 'Flashcard và bài tập giao tiếp tiếng Anh',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#f0f4f8',
+    theme_color: '#1D9E75',
+    orientation: 'portrait',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.head.appendChild(link);
+  // Set apple touch icon
+  document.getElementById('pwa-icon').href = icon192;
+}
+
+// Register inline service worker for offline caching
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  const swCode = `
+const CACHE = 'vocab-tool-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./'))) );
+});`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const url = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(()=>{});
+}
+
+function pwaTrigger() {
+  if (isIOS && !isStandalone) {
+    document.getElementById('ios-guide').style.display = 'block';
+  } else if (pwaDeferred) {
+    document.getElementById('pwa-banner').style.display = 'block';
+  }
+}
+
+function pwaInstall() {
+  if (!pwaDeferred) return;
+  pwaDeferred.prompt();
+  pwaDeferred.userChoice.then(r => {
+    if (r.outcome === 'accepted') {
+      document.getElementById('pwa-banner').style.display = 'none';
+      document.getElementById('pwa-add-btn').style.display = 'none';
+    }
+    pwaDeferred = null;
+  });
+}
+
+function pwaDismiss() {
+  document.getElementById('pwa-banner').style.display = 'none';
+  sessionStorage.setItem('pwa-dismissed','1');
+}
+
+function iosClose() {
+  document.getElementById('ios-guide').style.display = 'none';
+}
+
+// Listen for Android install prompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  pwaDeferred = e;
+  if (!isStandalone && !sessionStorage.getItem('pwa-dismissed')) {
+    document.getElementById('pwa-banner').style.display = 'block';
+  }
+  document.getElementById('pwa-add-btn').style.display = 'block';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-banner').style.display = 'none';
+  document.getElementById('pwa-add-btn').style.display = 'none';
+  pwaDeferred = null;
+});
+
+// Init PWA
+if (!isStandalone) {
+  injectManifest();
+  registerSW();
+  document.getElementById('pwa-add-btn').style.display = 'block';
+  // Show iOS guide automatically after 3s on first visit
+  if (isIOS && !sessionStorage.getItem('ios-shown')) {
+    setTimeout(() => {
+      document.getElementById('ios-guide').style.display = 'block';
+      sessionStorage.setItem('ios-shown','1');
+    }, 3000);
+  }
+}
+</script>
+</body>
+</html>
